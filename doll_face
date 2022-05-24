@@ -1,0 +1,286 @@
+import sys
+import functools
+from tkinter import *
+import os
+from PIL import ImageTk, Image
+from tkinter import messagebox
+from tkinter import ttk
+from tkinter import filedialog
+
+root = Tk()
+root.geometry("800x1000")
+
+root.title('Dollhouse')
+root.iconbitmap("dollicon.ico")
+
+doll_home = "C:\\Users\\Catalina\\Documents\\OSU CS\\CS361\\doll_face_project\\Trials"
+microservice = "C:\\Users\\Catalina\\Documents\\OSU CS\\CS361\\doll_face_project\\Trials\\Microservice"
+client_edited = "C:\\Users\\Catalina\\Documents\\OSU CS\\CS361\\doll_face_project\\Trials\\Microservice\\client_edited.png"
+
+
+def open_img(spot, path):
+    """This function allows the user to select picture for the doll from local files"""
+    # Select the Image name  from a local directory
+    x = filedialog.askopenfilename()
+
+    # opens the image
+    img = Image.open(x)
+    img.save(path + "\\" + "doll_pic" + ".png")
+    img.save(microservice + "\\" + "client_image" + ".png")
+    img.save(microservice + "\\" + "image0" + ".jpg")
+    # resize the image and apply a high-quality down sampling filter
+
+    img.resize((100, 300), Image.ANTIALIAS)
+    # PhotoImage class is used to add image to widgets, icons etc
+    img = ImageTk.PhotoImage(img)
+
+    # create a label
+    panel = Label(spot, image=img)
+
+    # set the image as img
+    panel.image = img
+    panel.pack()
+
+
+def popup():
+    """let the user to make sure they are ready to create a new doll"""
+    response = messagebox.askyesno("Check", "Are you ready to create a new doll?")
+
+    if response == 1:
+        open_doll_maker()
+
+
+def open_doll_maker():
+    """Starts the process of doll opening"""
+    doll_maker = Toplevel()
+    doll_maker.title("Create a New Doll")
+    doll_maker.geometry("600x1000")
+    e = Entry(doll_maker, width=50, borderwidth=5)
+
+    doll_name = e.get()
+
+    image_path = os.path.join(doll_home, e.get())
+    e.pack()
+
+    def file_created():
+        messagebox.showinfo("Success", "File created successfully!")
+
+    def go_to_my_doll():
+        my_new_dolls = Toplevel()
+        my_new_dolls.title(e.get())
+        my_new_dolls.geometry("600x800")
+        doll_profile = LabelFrame(my_new_dolls, text=e.get())
+        doll_profile.pack()
+
+        # Tried to implement a scroll bar here but it didn't work will fix later
+        """
+        main_frame = Frame(my_new_dolls, text=e.get())
+        main_frame.pack(fill=BOTH, expand=1)
+
+        my_canvas = Canvas(doll_profile)
+        my_canvas.pack(side=LEFT, fill=BOTH, expand=1)
+
+        my_scrollbar = ttk.Scrollbar(doll_profile, orient=VERTICAL, command=my_canvas.yview)
+        my_scrollbar.pack(side=RIGHT, fill=Y)
+
+        my_canvas.configure(yscrollcommand=my_scrollbar.set)
+        my_canvas.bind('<Configure>', lambda e: my_canvas.configure(scrollregion=my_canvas.bbox("all")))
+
+        second_frame = Frame(my_canvas)
+        my_canvas.create_window((0, 0), window=second_frame, anchor="nw")
+        """
+
+        profile_picture = Button(my_new_dolls, text="Choose profile picture", font=("Arial", 10), padx=5, pady=5,
+                                 command=lambda: [open_img(doll_profile, os.path.join(doll_home, e.get()))])
+        profile_picture.pack()
+        save_the_doll = Button(my_new_dolls, text="Save", font=("Arial", 10), padx=5, pady=5,
+                               command=lambda: [close(my_new_dolls)])
+        save_the_doll.pack()
+
+    def create_new_doll():
+        path = os.path.join(doll_home, e.get())
+        os.mkdir(path)
+
+        f = open("doll_names.txt", "a")
+        f.writelines(f"{e.get()}\n")
+        f.close()
+
+    def edit_doll():
+        img = Image.open(client_edited)
+        # path = os.path.join(doll_home, e.get())
+
+        img.save(os.path.join(doll_home, e.get()) + "\\" + "doll_pic" + ".png")
+        pass
+
+    def close(window):
+        window.destroy()
+
+    edit_a_doll = Button(doll_maker, text="Save the edited doll", font=("Arial", 10), padx=5, pady=5,
+                         command=edit_doll)  # lambda: [edit_doll(path)])
+    edit_a_doll.pack()
+
+    create_a_doll = Button(doll_maker, text="Create a new doll", padx=20, pady=20,
+                           command=lambda: [create_new_doll(), file_created()],
+                           font=("Arial", 18), bg="yellow")
+    create_a_doll.pack()
+
+    see_doll = Button(doll_maker, text="Go to My Doll", font=("Arial", 10), padx=5, pady=5, command=go_to_my_doll)
+    see_doll.pack()
+
+    exit = Button(doll_maker, text="Done and Return to Lobby", font=("Arial", 10), padx=5, pady=5,
+                  command=lambda: [close(doll_maker)])
+    exit.pack()
+
+
+def delete_doll():
+    """this function will cause all the stuff about a doll to be deleted"""
+    pass
+
+
+def delete_pop():
+    """let the user to make sure they are ready to create a new doll"""
+    messagebox.showwarning("Warning", "Deleting a doll is permanent and not recoverable.")
+    sure_or_not = messagebox.askyesno("This is my Popup!", "Are you sure about deleting this doll?")
+
+    if sure_or_not == 1:
+        delete_doll()
+
+
+def doll_slide(this_doll):
+    current_doll = Toplevel()
+    current_doll.title(f"{this_doll}")
+    current_doll.geometry("600x1000")
+    path = f"{doll_home}\\{this_doll}"
+    image_list = []
+
+    for file in os.listdir(path):
+        if file.endswith(".png"):
+            image_list.append(ImageTk.PhotoImage(Image.open(f"{doll_home}\\{this_doll}\\{file}")))
+    image_label = Label(current_doll, image=image_list[0])
+    image_label.pack()
+    status = Label(current_doll, text="Image 1 of" + str(len(image_list)), bd=5, relief=SUNKEN, anchor=E)
+
+    def forward(image_number):
+        global image_label
+        global button_forward
+        global button_back
+
+        image_label.forget()
+        image_label = Label(image=image_list[image_number - 1])
+        button_forward = Button(current_doll, text=">>", command=lambda: forward(image_number + 1))
+        button_back = Button(current_doll, text="<<", command=lambda: back(image_number - 1))
+
+        if image_number == len(image_list):
+            button_forward = Button(current_doll, text=">>", state=DISABLED)
+
+        button_back.pack()
+        button_forward.pack()
+        image_label.pack()
+
+        status = Label(current_doll, text="Image " + str(image_number) + " of " + str(len(image_list)), bd=5,
+                       relief=SUNKEN,
+                       anchor=E)
+        status.pack()
+
+    def back(image_number):
+
+        global image_label
+        global button_forward
+        global button_back
+
+        image_label.grid_forget()
+        image_label = Label(image=image_list[image_number - 1])
+        button_forward = Button(current_doll, text=">>", command=lambda: forward(image_number + 1))
+        button_back = Button(current_doll, text="<<", command=lambda: back(image_number - 1))
+
+        if image_number == 1:
+            button_back = Button(current_doll, text="<<", state=DISABLED)
+
+        button_back.pack()
+        button_forward.pack()
+        image_label.pack()
+
+        status = Label(current_doll, text="Image " + str(image_number) + " of " + str(len(image_list)), bd=5,
+                       relief=SUNKEN,
+                       anchor=E)
+        status.pack()
+
+    button_back = Button(current_doll, text="<<", command=back, state=DISABLED)
+    button_exit = Button(current_doll, text="Exit Slides", command=root.quit)
+    button_forward = Button(current_doll, text=">>", command=lambda: forward(2))
+
+    button_back.pack()
+    button_exit.pack()
+    button_forward.pack()
+    status.pack()
+
+
+def my_dolls():
+    """the page for the user's doll collections"""
+    my_collection = Toplevel()
+    my_collection.title("My Dolls")
+    my_collection.geometry("600x800")
+
+    main_frame = Frame(my_collection)
+    main_frame.pack(fill=BOTH, expand=1)
+
+    my_canvas = Canvas(main_frame)
+    my_canvas.pack(side=LEFT, fill=BOTH, expand=1)
+
+    my_scrollbar = ttk.Scrollbar(main_frame, orient=VERTICAL, command=my_canvas.yview)
+    my_scrollbar.pack(side=RIGHT, fill=Y)
+
+    my_canvas.configure(yscrollcommand=my_scrollbar.set)
+    my_canvas.bind('<Configure>', lambda e: my_canvas.configure(scrollregion=my_canvas.bbox("all")))
+
+    second_frame = Frame(my_canvas)
+    my_canvas.create_window((0, 0), window=second_frame, anchor="nw")
+
+    with open("doll_names.txt", "r") as a_file:
+        lines = a_file.read().splitlines()
+
+        frames = []
+        print(lines)
+
+        for line in lines:
+            path = f"{doll_home}\\{line}\\doll_pic.png"
+            print(path)
+            img = ImageTk.PhotoImage(Image.open(path))
+            img_button = Button(second_frame, image=img)
+            img_button.pack()
+            img_button.image = img
+            frames.append(Frame)
+            print(frames)
+
+            doll_name = Label(second_frame, text=f"{line}", font=("Arial", 10), bd=5, relief=SUNKEN, anchor=E)
+            doll_name.pack()
+
+            delete_a_doll = Button(second_frame, text="Delete this doll", font=("Arial", 10), padx=5, pady=5,
+                                   command=delete_pop)
+            delete_a_doll.pack()
+            open_slide = Button(second_frame, text="Open album", font=("Arial", 10), padx=5, pady=5,
+                                command=functools.partial(doll_slide, line))
+            open_slide.pack()
+
+
+def open_closet():
+    pass
+
+
+frame_1 = LabelFrame(root, padx=50, pady=50)
+frame_1.pack(padx=100, pady=100)
+
+my_dolls_button = Button(root, text="My Dolls", padx=50, pady=50, font=("Arial", 18), command=my_dolls)
+my_dolls_button.pack()
+
+new_doll_button = Button(root, text="Create a New Doll", padx=50, pady=50, font=("Arial", 18), command=popup)
+new_doll_button.pack()
+
+doll_closet = Button(root, text="Doll Closet", padx=20, pady=20, command=open_closet, font=("Arial", 18))
+
+doll_closet.pack()
+
+exit_button = Button(root, text="Exit Doll House", padx=5, pady=5, font=("Arial", 18), command=root.quit)
+exit_button.pack()
+
+root.mainloop()
